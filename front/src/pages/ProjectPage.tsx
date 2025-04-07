@@ -7,8 +7,10 @@ export default function ProjectPage() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Projet ID: {id}</h1>
-      <KanbanBoard projectId={id!} />
+      {/* En-tête de debug optionnelle */}
+      {/* <h1 className="text-2xl font-bold mb-4">Projet ID: {id}</h1> */}
+
+      {id && <KanbanBoard projectId={id} />}
     </div>
   )
 }

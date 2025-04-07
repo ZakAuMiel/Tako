@@ -1,10 +1,9 @@
-// src/components/kanban/TaskCard.tsx
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
-import { CornerUpRight, Hand } from "lucide-react"
+import { GripVertical, CornerUpRight } from "lucide-react"
 
 export type Task = {
   id: string
@@ -27,9 +26,13 @@ export default function TaskCard({ task, onExpand }: TaskCardProps) {
     listeners,
     transform,
     transition,
+    isDragging,
   } = useSortable({
     id: task.id,
-    data: { type: "task", task },
+    data: {
+      type: "task",
+      task,
+    },
   })
 
   const style = {
@@ -44,29 +47,36 @@ export default function TaskCard({ task, onExpand }: TaskCardProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={cn(
-        "p-3 text-sm font-medium bg-card transition-transform duration-150 ease-in-out cursor-default relative",
-        hovered && "shadow-lg"
+        "p-3 text-sm font-medium bg-card relative transition-transform duration-150 ease-in-out",
+        hovered && "shadow-md"
       )}
     >
-      <div className="flex justify-between items-start">
-        {/* Drag handle avec icône de main */}
+      {/* Top row */}
+      <div className="flex justify-between items-center mb-2">
+        {/* Drag handle ✋ */}
         <div
           {...attributes}
           {...listeners}
-          title="Déplacer la tâche"
           className="cursor-grab active:cursor-grabbing text-muted-foreground"
+          title="Déplacer la tâche"
         >
-          <Hand className="w-4 h-4" />
+          <GripVertical className="w-4 h-4" />
         </div>
 
-        {/* Bouton pour ouvrir le dialog */}
-        <button onClick={onExpand} className="ml-2 text-muted-foreground">
+        {/* Open dialog button ↗ */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onExpand()
+          }}
+          className="ml-2 text-muted-foreground"
+          title="Afficher la tâche"
+        >
           <CornerUpRight className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Titre de la tâche */}
-      <div className="mt-2 font-medium truncate">{task.title}</div>
+      <div className="font-medium truncate">{task.title}</div>
 
       {/* Tags */}
       {task.tags.length > 0 && (

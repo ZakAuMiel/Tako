@@ -15,6 +15,14 @@ import TaskCard, { Task } from "./TaskCard"
 import TaskDialog from "./TaskDialog"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 
 export type Column = {
   id: string
@@ -31,6 +39,11 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false)
+  const [addColumnDialogOpen, setAddColumnDialogOpen] = useState(false)
+  const [newColumnName, setNewColumnName] = useState("")
+  const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null)
 
   const handleCreateTask = (task: Task) => {
     setColumns(prev =>
@@ -49,20 +62,39 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
     )
   }
 
-  const handleRenameColumn = (columnId: string) => {
-    const newName = prompt("Nouveau nom de la colonne :")
-    if (!newName) return
+  const openRenameDialog = (columnId: string) => {
+    setRenamingColumnId(columnId)
+    const col = columns.find(c => c.id === columnId)
+    setNewColumnName(col?.name || "")
+    setRenameDialogOpen(true)
+  }
+
+  const handleRenameColumn = () => {
+    if (!renamingColumnId || !newColumnName.trim()) return
     setColumns(prev =>
       prev.map(col =>
-        col.id === columnId ? { ...col, name: newName } : col
+        col.id === renamingColumnId ? { ...col, name: newColumnName } : col
       )
     )
+    setRenameDialogOpen(false)
   }
 
   const handleDeleteColumn = (columnId: string) => {
     const confirmed = confirm("Supprimer cette colonne ?")
     if (!confirmed) return
     setColumns(prev => prev.filter(col => col.id !== columnId))
+  }
+
+  const handleAddColumn = () => {
+    if (!newColumnName.trim()) return
+    const newCol: Column = {
+      id: `col-${Date.now()}`,
+      name: newColumnName.trim(),
+      tasks: [],
+    }
+    setColumns(prev => [...prev, newCol])
+    setNewColumnName("")
+    setAddColumnDialogOpen(false)
   }
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -129,10 +161,16 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
     <>
       <div className="flex justify-between items-center px-6 pt-4">
         <h2 className="text-xl font-bold">Tableau de bord</h2>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Ajouter une tâche
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setAddColumnDialogOpen(true)} variant="secondary">
+            <Plus className="w-4 h-4 mr-1" />
+            Ajouter une colonne
+          </Button>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Ajouter une tâche
+          </Button>
+        </div>
       </div>
 
       <DndContext
@@ -153,7 +191,7 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
                 name={col.name}
                 tasks={col.tasks}
                 onTaskClick={handleUpdateTask}
-                onRename={() => handleRenameColumn(col.id)}
+                onRename={() => openRenameDialog(col.id)}
                 onDelete={() => handleDeleteColumn(col.id)}
               />
             </SortableContext>
@@ -169,6 +207,7 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
         </DragOverlay>
       </DndContext>
 
+      {/* Dialog créer tâche */}
       <TaskDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -180,6 +219,40 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
         }}
         onSave={handleCreateTask}
       />
+
+      {/* Dialog renommer colonne */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renommer la colonne</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={newColumnName}
+            onChange={(e) => setNewColumnName(e.target.value)}
+            placeholder="Nom de la colonne"
+          />
+          <DialogFooter>
+            <Button onClick={handleRenameColumn}>Valider</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog ajouter colonne */}
+      <Dialog open={addColumnDialogOpen} onOpenChange={setAddColumnDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajouter une colonne</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={newColumnName}
+            onChange={(e) => setNewColumnName(e.target.value)}
+            placeholder="Nom de la nouvelle colonne"
+          />
+          <DialogFooter>
+            <Button onClick={handleAddColumn}>Créer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

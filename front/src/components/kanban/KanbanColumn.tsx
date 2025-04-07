@@ -1,30 +1,37 @@
-// src/components/kanban/KanbanColumn.tsx
 import { Button } from "@/components/ui/button"
 import { useDroppable } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { MoreHorizontal } from "lucide-react"
 import TaskCard, { Task } from "./TaskCard"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu"
 
 interface ColumnProps {
   id: string
   name: string
   tasks: Task[]
   onTaskClick: (task: Task) => void
-  onRename?: () => void
-  onDelete?: () => void
+  onRename: () => void
+  onDelete: () => void
 }
 
-
-
-export default function KanbanColumn({ id, name, tasks, onTaskClick, onRename, onDelete }: ColumnProps) {
-  
-
+export default function KanbanColumn({
+  id,
+  name,
+  tasks,
+  onTaskClick,
+  onRename,
+  onDelete,
+}: ColumnProps) {
   const { setNodeRef } = useDroppable({
-  id, // le column id
-  data: {
-    type: "column",
-    columnId: id,
+    id,
+    data: {
+      type: "column",
+      columnId: id,
     },
   })
 
