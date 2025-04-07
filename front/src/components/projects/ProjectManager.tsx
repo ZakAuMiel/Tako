@@ -1,3 +1,4 @@
+// Import des outils DnD Kit pour le drag & drop
 import {
   DndContext,
   PointerSensor,
@@ -6,36 +7,53 @@ import {
   useSensors,
   DragOverlay,
 } from "@dnd-kit/core"
+
 import {
   SortableContext,
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable"
+
+// React & hooks
 import { useState } from "react"
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+
+// UI components (dialog, input, bouton, etc.)
+import {
+  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import ProjectCard from "./ProjectCard"
 import { Card } from "@/components/ui/card"
 
+// Le composant ProjectCard
+import ProjectCard from "./ProjectCard"
+
+// Type pour un projet
 type Project = {
   id: number
   name: string
 }
 
 export default function ProjectManager() {
+  // Liste des projets
   const [projects, setProjects] = useState<Project[]>([])
+
+  // Valeur temporaire lors de la création d’un projet
   const [projectName, setProjectName] = useState("")
+
+  // Gère l’état du Dialog
   const [open, setOpen] = useState(false)
+
+  // ID du projet en cours de drag
   const [activeId, setActiveId] = useState<number | null>(null)
 
+  // Détection du drag à la souris (distance avant déclenchement)
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
+  // Crée un nouveau projet
   const createProject = () => {
     if (!projectName.trim()) return
     setProjects(prev => [...prev, { id: Date.now(), name: projectName }])
@@ -43,16 +61,19 @@ export default function ProjectManager() {
     setOpen(false)
   }
 
+  // Supprime un projet selon son id
   const handleDelete = (id: number) => {
     setProjects(prev => prev.filter(p => p.id !== id))
   }
 
+  // Renomme un projet
   const handleRename = (id: number, newName: string) => {
-    setProjects(prev =>
-      prev.map(p => (p.id === id ? { ...p, name: newName } : p))
-    )
+    setProjects(prev => prev.map(p => (
+      p.id === id ? { ...p, name: newName } : p
+    )))
   }
 
+  // Duplique un projet en générant un nouvel id
   const handleDuplicate = (id: number) => {
     const original = projects.find(p => p.id === id)
     if (original) {
@@ -63,10 +84,12 @@ export default function ProjectManager() {
     }
   }
 
+  // Au début du drag
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id)
   }
 
+  // À la fin du drag → on trie les projets si la position a changé
   const handleDragEnd = (event: any) => {
     const { active, over } = event
     if (active.id !== over?.id) {
@@ -77,11 +100,12 @@ export default function ProjectManager() {
     setActiveId(null)
   }
 
+  // Projet en cours de drag (pour l’overlay visuel)
   const activeProject = projects.find(p => p.id === activeId)
 
   return (
     <div className="space-y-4">
-      {/* Dialog création projet */}
+      {/* Formulaire de création d’un projet */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button className="flex items-center gap-2">
@@ -104,14 +128,17 @@ export default function ProjectManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Grille projets */}
+      {/* Liste triable des projets */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={projects.map(p => p.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={projects.map(p => p.id)}
+          strategy={verticalListSortingStrategy}
+        >
           <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">
             {projects.map(p => (
               <ProjectCard
@@ -126,7 +153,7 @@ export default function ProjectManager() {
           </div>
         </SortableContext>
 
-        {/* Drag preview */}
+        {/* Carte flottante pendant le drag */}
         <DragOverlay>
           {activeProject ? (
             <Card className="p-4 w-full max-w-sm h-28 rounded-lg bg-muted text-foreground font-semibold shadow-lg flex items-center">

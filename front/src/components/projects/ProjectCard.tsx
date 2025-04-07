@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Card } from "@/components/ui/card"
-import { MoreVertical, Trash2 } from "lucide-react"
+import { MoreVertical } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +10,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
+// Props attendues pour chaque carte
 type ProjectCardProps = {
   id: number
   name: string
@@ -28,18 +33,21 @@ export default function ProjectCard({
   onDelete,
   onDuplicate,
 }: ProjectCardProps) {
+  // Intégration avec sortable (drag)
   const { setNodeRef, attributes, listeners, transform, transition } = useSortable({ id })
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   }
 
+  // États pour le renommage
   const [isRenamingInline, setIsRenamingInline] = useState(false)
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
   const [newName, setNewName] = useState(name)
 
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // Validation du renommage (inline ou dialog)
   const handleRename = () => {
     if (newName.trim() && newName !== name) {
       onRename(id, newName.trim())
@@ -56,7 +64,7 @@ export default function ProjectCard({
       style={style}
       className="relative p-4 w-full h-28 max-w-sm rounded-lg bg-card text-card-foreground border shadow transition group"
     >
-      {/* Menu contextuel */}
+      {/* Bouton menu contextuel "..." */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="absolute top-2 right-2 p-1 rounded hover:bg-muted">
@@ -79,7 +87,7 @@ export default function ProjectCard({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Nom inline ou input */}
+      {/* Nom du projet ou input de renommage inline */}
       {isRenamingInline ? (
         <Input
           ref={inputRef}
@@ -97,7 +105,7 @@ export default function ProjectCard({
         <span className="truncate font-medium">{name}</span>
       )}
 
-      {/* Dialog renommer */}
+      {/* Dialog pour renommer via popup */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent>
           <h2 className="text-lg font-semibold mb-2">Renommer le projet</h2>
