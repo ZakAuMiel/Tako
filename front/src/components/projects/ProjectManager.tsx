@@ -12,14 +12,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable"
 import { useState } from "react"
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
@@ -54,6 +47,22 @@ export default function ProjectManager() {
     setProjects(prev => prev.filter(p => p.id !== id))
   }
 
+  const handleRename = (id: number, newName: string) => {
+    setProjects(prev =>
+      prev.map(p => (p.id === id ? { ...p, name: newName } : p))
+    )
+  }
+
+  const handleDuplicate = (id: number) => {
+    const original = projects.find(p => p.id === id)
+    if (original) {
+      setProjects(prev => [
+        ...prev,
+        { id: Date.now(), name: `${original.name} (copie)` },
+      ])
+    }
+  }
+
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id)
   }
@@ -62,7 +71,7 @@ export default function ProjectManager() {
     const { active, over } = event
     if (active.id !== over?.id) {
       const oldIndex = projects.findIndex(p => p.id === active.id)
-      const newIndex = projects.findIndex(p => p.id === over?.id)
+      const newIndex = projects.findIndex(p => p.id === over.id)
       setProjects(arrayMove(projects, oldIndex, newIndex))
     }
     setActiveId(null)
@@ -72,7 +81,7 @@ export default function ProjectManager() {
 
   return (
     <div className="space-y-4">
-      {/* Ajouter un projet */}
+      {/* Dialog création projet */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button className="flex items-center gap-2">
@@ -95,7 +104,7 @@ export default function ProjectManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Grille & drag */}
+      {/* Grille projets */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -110,21 +119,19 @@ export default function ProjectManager() {
                 id={p.id}
                 name={p.name}
                 onDelete={handleDelete}
-                isOverlay={false}
+                onRename={handleRename}
+                onDuplicate={handleDuplicate}
               />
             ))}
           </div>
         </SortableContext>
 
-        {/* Carte flottante en overlay */}
+        {/* Drag preview */}
         <DragOverlay>
           {activeProject ? (
-            <ProjectCard
-              id={activeProject.id}
-              name={activeProject.name}
-              onDelete={() => {}}
-              isOverlay={true}
-            />
+            <Card className="p-4 w-full max-w-sm h-28 rounded-lg bg-muted text-foreground font-semibold shadow-lg flex items-center">
+              {activeProject.name}
+            </Card>
           ) : null}
         </DragOverlay>
       </DndContext>
