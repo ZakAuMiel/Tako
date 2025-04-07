@@ -1,9 +1,10 @@
 import AppLayout from "@/components/layout/AppLayout"
+import ProjectManager from "@/components/projects/ProjectManager"
 
 function App() {
   return (
     <AppLayout>
-      <p className="text-muted-foreground">Bienvenue sur Tako 👋</p>
+      <ProjectManager />
     </AppLayout>
   )
 }
