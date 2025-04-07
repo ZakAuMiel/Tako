@@ -29,6 +29,9 @@ import { Card } from "@/components/ui/card"
 // Le composant ProjectCard
 import ProjectCard from "./ProjectCard"
 
+// useNavigate pour la navigation entre les pages
+import { useNavigate } from "react-router-dom"
+
 // Type pour un projet
 type Project = {
   id: number
@@ -38,6 +41,17 @@ type Project = {
 export default function ProjectManager() {
   // Liste des projets
   const [projects, setProjects] = useState<Project[]>([])
+
+  // Hook pour la navigation
+  const navigate = useNavigate()
+
+  // Fonction pour naviguer vers la page du projet
+  // id: number → id du projet à ouvrir
+  // navigate(`/project/${id}`) → redirige vers la page du projet
+  
+  const goToProject = (id: number) => {
+  navigate(`/project/${id}`)
+  }
 
   // Valeur temporaire lors de la création d’un projet
   const [projectName, setProjectName] = useState("")
@@ -148,6 +162,7 @@ export default function ProjectManager() {
                 onDelete={handleDelete}
                 onRename={handleRename}
                 onDuplicate={handleDuplicate}
+                onClick={() => navigate(`/project/${p.id}`)}
               />
             ))}
           </div>

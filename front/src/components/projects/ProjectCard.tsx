@@ -24,6 +24,7 @@ type ProjectCardProps = {
   onRename: (id: number, newName: string) => void
   onDelete: (id: number) => void
   onDuplicate: (id: number) => void
+  onClick?: () => void // Fonction pour gérer le clic sur la carte
 }
 
 export default function ProjectCard({
@@ -32,6 +33,7 @@ export default function ProjectCard({
   onRename,
   onDelete,
   onDuplicate,
+  onClick, // Fonction par défaut pour le clic sur la carte
 }: ProjectCardProps) {
   // Intégration avec sortable (drag)
   const { setNodeRef, attributes, listeners, transform, transition } = useSortable({ id })
@@ -61,8 +63,9 @@ export default function ProjectCard({
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      onClick={onClick}
       style={style}
-      className="relative p-4 w-full h-28 max-w-sm rounded-lg bg-card text-card-foreground border shadow transition group"
+      className="relative cursor-pointer hover:shadow-lg transition"
     >
       {/* Bouton menu contextuel "..." */}
       <DropdownMenu>
