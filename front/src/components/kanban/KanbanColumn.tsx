@@ -1,81 +1,63 @@
-import { Card } from "@/components/ui/card"
+// src/components/kanban/KanbanColumn.tsx
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useState } from "react"
-import { Plus } from "lucide-react"
+import { useDroppable } from "@dnd-kit/core"
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { MoreHorizontal } from "lucide-react"
 import TaskCard, { Task } from "./TaskCard"
-import TaskDialog from "./TaskDialog"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 
-type ColumnProps = {
-  column: {
-    id: string
-    name: string
-    tasks: Task[]
-  }
+interface ColumnProps {
+  id: string
+  name: string
+  tasks: Task[]
+  onTaskClick: (task: Task) => void
+  onRename?: () => void
+  onDelete?: () => void
 }
 
-export default function KanbanColumn({ column }: ColumnProps) {
-  const [tasks, setTasks] = useState<Task[]>(column.tasks)
-  const [newTitle, setNewTitle] = useState("")
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
-  const addTask = () => {
-    if (!newTitle.trim()) return
-    const newTask: Task = {
-      id: `task-${Date.now()}`,
-      title: newTitle,
-      description: "",
-      tags: [],
-    }
-    setTasks(prev => [...prev, newTask])
-    setNewTitle("")
-  }
 
-  const handleOpenDialog = (task: Task) => {
-    setSelectedTask(task)
-    setDialogOpen(true)
-  }
+export default function KanbanColumn({ id, name, tasks, onTaskClick, onRename, onDelete }: ColumnProps) {
+  
 
-  const handleSaveTask = (updated: Task) => {
-    setTasks(prev =>
-      prev.map(t => (t.id === updated.id ? updated : t))
-    )
-    setDialogOpen(false)
-  }
+  const { setNodeRef } = useDroppable({
+  id, // le column id
+  data: {
+    type: "column",
+    columnId: id,
+    },
+  })
 
   return (
-    <div className="min-w-[250px] w-64 flex flex-col gap-2">
-      <h2 className="text-lg font-semibold mb-2">{column.name}</h2>
+    <div
+      ref={setNodeRef}
+      className="min-w-[280px] w-[280px] flex flex-col gap-3 rounded-md bg-muted/40 border border-border p-4 shadow-sm"
+    >
+      {/* Header */}
+      <div className="flex justify-between items-center mb-1">
+        <h2 className="text-lg font-semibold truncate">{name}</h2>
 
-      {tasks.map(task => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          onClick={() => handleOpenDialog(task)}
-        />
-      ))}
-
-      <div className="mt-2">
-        <Input
-          placeholder="Nouvelle tâche"
-          value={newTitle}
-          onChange={e => setNewTitle(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && addTask()}
-        />
-        <Button onClick={addTask} variant="ghost" size="sm" className="mt-1 w-full">
-          <Plus className="w-4 h-4 mr-1" /> Ajouter
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon" variant="ghost" className="text-muted-foreground">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onRename}>Renommer</DropdownMenuItem>
+            <DropdownMenuItem onClick={onDelete}>Supprimer</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {selectedTask && (
-        <TaskDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          task={selectedTask}
-          onSave={handleSaveTask}
-        />
-      )}
+      {/* Task list */}
+      <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+        <div className="flex flex-col gap-2">
+          {tasks.map(task => (
+            <TaskCard key={task.id} task={task} onExpand={() => onTaskClick(task)} />
+          ))}
+        </div>
+      </SortableContext>
     </div>
   )
 }

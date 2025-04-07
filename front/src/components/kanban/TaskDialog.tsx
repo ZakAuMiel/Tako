@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import type { Task } from "./TaskCard"
+import { DialogDescription } from "@radix-ui/react-dialog"
 
 interface TaskDialogProps {
   open: boolean
@@ -45,6 +46,9 @@ export default function TaskDialog({ open, onOpenChange, task, onSave }: TaskDia
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Modifier la tâche</DialogTitle>
+          <DialogDescription>
+            Modifiez les détails de la tâche ci-dessous.
+          </DialogDescription>
         </DialogHeader>
 
         <Input
