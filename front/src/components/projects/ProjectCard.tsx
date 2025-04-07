@@ -75,16 +75,30 @@ export default function ProjectCard({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setIsRenamingInline(true)}>
-            ✏️ Renommer
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setRenameDialogOpen(true)}>
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation()
+              setRenameDialogOpen(true)
+            }}
+          >
             💬 Renommer via popup
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDuplicate(id)}>
+
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation()
+              onDuplicate(id)
+            }}
+          >
             📄 Dupliquer
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDelete(id)}>
+
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(id)
+            }}
+          >
             🗑 Supprimer
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -108,7 +122,7 @@ export default function ProjectCard({
         <span className="truncate font-medium">{name}</span>
       )}
 
-      {/* Dialog pour renommer via popup */}
+      {/* Dialog pour renommer via popup */}  {/* bug quand on rename ca nous tp à la page tasks*/}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent>
           <h2 className="text-lg font-semibold mb-2">Renommer le projet</h2>
@@ -118,7 +132,10 @@ export default function ProjectCard({
             onKeyDown={e => e.key === "Enter" && handleRename()}
           />
           <DialogFooter className="mt-4">
-            <Button onClick={handleRename}>Renommer</Button>
+            <Button onClick={(e)=>{
+              e.stopPropagation()
+              handleRename()
+            }}>Renommer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
