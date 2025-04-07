@@ -61,7 +61,10 @@ export default function KanbanColumn({
       <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2">
           {tasks.map(task => (
-            <TaskCard key={task.id} task={task} onExpand={() => onTaskClick(task)} />
+            <TaskCard 
+            key={task.id} 
+            task={task} 
+            onExpand={() => onTaskClick(task)} />
           ))}
         </div>
       </SortableContext>

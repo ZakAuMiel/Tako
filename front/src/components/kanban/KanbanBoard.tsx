@@ -1,4 +1,5 @@
-import { useState } from "react"
+// src/components/kanban/KanbanBoard.tsx
+import { useEffect, useState } from "react"
 import {
   DndContext,
   DragOverlay,
@@ -38,6 +39,7 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
   ])
 
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
 
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
@@ -45,13 +47,27 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
   const [newColumnName, setNewColumnName] = useState("")
   const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null)
 
+  // --- GESTION TÂCHES --- //
+
   const handleCreateTask = (task: Task) => {
     setColumns(prev =>
       prev.map(col =>
         col.id === "todo" ? { ...col, tasks: [...col.tasks, task] } : col
       )
     )
+    setDialogOpen(false)
   }
+
+  const handleDeleteTask = (taskId: string) => {
+  setColumns(prev =>
+    prev.map(col => ({
+      ...col,
+      tasks: col.tasks.filter(t => t.id !== taskId),
+    }))
+  )
+  setDialogOpen(false)
+  setSelectedTask(null)
+}
 
   const handleUpdateTask = (updated: Task) => {
     setColumns(prev =>
@@ -60,6 +76,8 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
         tasks: col.tasks.map(t => (t.id === updated.id ? updated : t)),
       }))
     )
+    setDialogOpen(false)
+    setSelectedTask(null)
   }
 
   const openRenameDialog = (columnId: string) => {
@@ -97,6 +115,8 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
     setAddColumnDialogOpen(false)
   }
 
+  // --- DRAG & DROP --- //
+
   const handleDragStart = (event: DragStartEvent) => {
     const task = event.active.data.current?.task as Task | undefined
     setActiveTask(task || null)
@@ -129,7 +149,6 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
     const overIndex = toColumn.tasks.findIndex(t => t.id === over.id)
 
     if (fromColumn.id === toColumn.id) {
-      // Reorder dans la même colonne
       const updatedTasks = [...fromColumn.tasks]
       const [movedTask] = updatedTasks.splice(activeIndex, 1)
       updatedTasks.splice(overIndex, 0, movedTask)
@@ -140,7 +159,6 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
         )
       )
     } else {
-      // Déplacement entre colonnes
       const fromTasks = [...fromColumn.tasks]
       const [movedTask] = fromTasks.splice(activeIndex, 1)
 
@@ -157,6 +175,17 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
     }
   }
 
+  // --- Écoute du clic sur task (via événement global) --- //
+  useEffect(() => {
+    const listener = (e: any) => {
+      setSelectedTask(e.detail.task)
+      setDialogOpen(true)
+    }
+
+    window.addEventListener("open-task-dialog", listener)
+    return () => window.removeEventListener("open-task-dialog", listener)
+  }, [])
+
   return (
     <>
       <div className="flex justify-between items-center px-6 pt-4">
@@ -166,7 +195,12 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
             <Plus className="w-4 h-4 mr-1" />
             Ajouter une colonne
           </Button>
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button
+            onClick={() => {
+              setDialogOpen(true)
+              setSelectedTask(null)
+            }}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Ajouter une tâche
           </Button>
@@ -190,7 +224,11 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
                 id={col.id}
                 name={col.name}
                 tasks={col.tasks}
-                onTaskClick={handleUpdateTask}
+                onTaskClick={(task) => {
+                  setSelectedTask(task)
+                  setDialogOpen(true)
+
+                }} // tu peux ajouter onTaskClick si tu veux ouvrir
                 onRename={() => openRenameDialog(col.id)}
                 onDelete={() => handleDeleteColumn(col.id)}
               />
@@ -207,20 +245,29 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
         </DragOverlay>
       </DndContext>
 
-      {/* Dialog créer tâche */}
-      <TaskDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        task={{
-          id: `task-${Date.now()}`,
-          title: "",
-          description: "",
-          tags: [],
-        }}
-        onSave={handleCreateTask}
-      />
+      {/* Dialog Tâche (modale création ou édition) */}
+      {dialogOpen && (
+        <TaskDialog
+          key={selectedTask ? selectedTask.id : "new"}
+          open={dialogOpen}
+          onDelete={handleDeleteTask}
+          onOpenChange={(open) => {
+            if (!open) setSelectedTask(null)
+            setDialogOpen(open)
+          }}
+          task={
+            selectedTask || {
+              id: `task-${Date.now()}`,
+              title: "",
+              description: "",
+              tags: [],
+            }
+          }
+          onSave={selectedTask ? handleUpdateTask : handleCreateTask}
+        />
+      )}
 
-      {/* Dialog renommer colonne */}
+      {/* Dialogs Colonnes */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -237,7 +284,6 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog ajouter colonne */}
       <Dialog open={addColumnDialogOpen} onOpenChange={setAddColumnDialogOpen}>
         <DialogContent>
           <DialogHeader>

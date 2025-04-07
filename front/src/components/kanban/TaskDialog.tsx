@@ -11,16 +11,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import type { Task } from "./TaskCard"
-import { DialogDescription } from "@radix-ui/react-dialog"
+import { DialogDescription } from "@/components/ui/dialog"
 
 interface TaskDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   task: Task
   onSave: (updatedTask: Task) => void
+  onDelete: (taskId: string) => void
+
 }
 
-export default function TaskDialog({ open, onOpenChange, task, onSave }: TaskDialogProps) {
+export default function TaskDialog({ open, onOpenChange, task, onSave, onDelete }: TaskDialogProps) {
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description)
   const [tags, setTags] = useState(task.tags.join(", "))
@@ -38,11 +40,10 @@ export default function TaskDialog({ open, onOpenChange, task, onSave }: TaskDia
       description,
       tags: tags.split(",").map(t => t.trim()).filter(Boolean),
     })
-    onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Modifier la tâche</DialogTitle>
@@ -71,6 +72,9 @@ export default function TaskDialog({ open, onOpenChange, task, onSave }: TaskDia
         />
 
         <DialogFooter>
+            <Button variant="destructive" onClick={() => onDelete(task.id)}>
+                Supprimer
+            </Button>
           <Button onClick={handleSave}>Enregistrer</Button>
         </DialogFooter>
       </DialogContent>
