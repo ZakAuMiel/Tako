@@ -1,14 +1,17 @@
-// src/components/projects/ProjectManager.tsx
 import {
   DndContext,
-  useSensor,
-  useSensors,
   PointerSensor,
   closestCenter,
-  DragEndEvent,
+  useSensor,
+  useSensors,
   DragOverlay,
 } from "@dnd-kit/core"
-import { useEffect, useRef, useState } from "react"
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable"
+import { useState } from "react"
 import {
   Dialog,
   DialogTrigger,
@@ -19,10 +22,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import ProjectCard from "./ProjectCard"
-import TrashZone from "./TrashZone"
 import { Plus } from "lucide-react"
-import gsap from "gsap"
+import ProjectCard from "./ProjectCard"
 import { Card } from "@/components/ui/card"
 
 type Project = {
@@ -35,57 +36,43 @@ export default function ProjectManager() {
   const [projectName, setProjectName] = useState("")
   const [open, setOpen] = useState(false)
   const [activeId, setActiveId] = useState<number | null>(null)
-  const [showTrash, setShowTrash] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-        activationConstraint: {
-        distance: 10, // pixels à déplacer avant d’activer le drag
-        },
+      activationConstraint: { distance: 8 },
     })
-    )
-
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (containerRef.current) {
-      gsap.from(containerRef.current.children, {
-        opacity: 0,
-        y: 20,
-        stagger: 0.05,
-        duration: 0.4,
-        ease: "power2.out",
-      })
-    }
-  }, [projects])
+  )
 
   const createProject = () => {
     if (!projectName.trim()) return
-    setProjects([...projects, { id: Date.now(), name: projectName }])
+    setProjects(prev => [...prev, { id: Date.now(), name: projectName }])
     setProjectName("")
     setOpen(false)
   }
 
+  const handleDelete = (id: number) => {
+    setProjects(prev => prev.filter(p => p.id !== id))
+  }
+
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id)
-    setShowTrash(true)
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
-  const over = event.over
-  setShowTrash(false)
-
-  // ❌ NE supprime QUE si le drop est terminé dans la trash zone
-  if (over && over.id === "trash" && activeId) {
-    setProjects(prev => prev.filter(p => p.id !== activeId))
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event
+    if (active.id !== over?.id) {
+      const oldIndex = projects.findIndex(p => p.id === active.id)
+      const newIndex = projects.findIndex(p => p.id === over?.id)
+      setProjects(arrayMove(projects, oldIndex, newIndex))
+    }
+    setActiveId(null)
   }
 
-  setActiveId(null)
-}
-
+  const activeProject = projects.find(p => p.id === activeId)
 
   return (
-    <div className="relative space-y-4">
+    <div className="space-y-4">
+      {/* Ajouter un projet */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button className="flex items-center gap-2">
@@ -108,31 +95,38 @@ export default function ProjectManager() {
         </DialogContent>
       </Dialog>
 
+      {/* Grille & drag */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[300px]"
-          ref={containerRef}
-        >
-          {projects.map(project => (
-            <ProjectCard key={project.id} id={project.id} name={project.name} />
-          ))}
-        </div>
+        <SortableContext items={projects.map(p => p.id)} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">
+            {projects.map(p => (
+              <ProjectCard
+                key={p.id}
+                id={p.id}
+                name={p.name}
+                onDelete={handleDelete}
+                isOverlay={false}
+              />
+            ))}
+          </div>
+        </SortableContext>
 
+        {/* Carte flottante en overlay */}
         <DragOverlay>
-         {activeId && (
-         <Card className="p-4 w-full max-w-sm h-28 rounded-lg bg-muted text-foreground font-semibold shadow-lg flex items-center">
-          {projects.find(p => p.id === activeId)?.name}
-          </Card>
-        )}
+          {activeProject ? (
+            <ProjectCard
+              id={activeProject.id}
+              name={activeProject.name}
+              onDelete={() => {}}
+              isOverlay={true}
+            />
+          ) : null}
         </DragOverlay>
-
-
-        {showTrash && <TrashZone />}
       </DndContext>
     </div>
   )
