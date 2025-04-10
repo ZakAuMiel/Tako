@@ -1,78 +1,79 @@
-import {
-  DndContext,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  DragOverlay,
-} from "@dnd-kit/core"
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable"
 
-import { useState } from "react"
-import {
-  Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog"
+// src/components/projects/ProjectManager.tsx
+
+import { useEffect, useState } from "react"
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { Card } from "@/components/ui/card"
 import ProjectCard from "./ProjectCard"
 import { useNavigate } from "react-router-dom"
+import api from "@/lib/api" // Import de notre instance Axios
 
+// Type d’un projet
 type Project = {
   id: number
   name: string
 }
 
 export default function ProjectManager() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [projectName, setProjectName] = useState("")
-  const [open, setOpen] = useState(false)
-  const [activeId, setActiveId] = useState<number | null>(null)
-  const [renamingId, setRenamingId] = useState<number | null>(null)
+  const [projects, setProjects] = useState<Project[]>([]) // Liste des projets
+  const [projectName, setProjectName] = useState("") // Nouveau nom lors de la création
+  const [open, setOpen] = useState(false) // Contrôle d'ouverture du dialog de création
+  const [activeId, setActiveId] = useState<number | null>(null) // ID du projet en train d'être déplacé
+  const navigate = useNavigate() // Navigation vers la page d’un projet
 
-  const navigate = useNavigate()
+  // Capteurs de drag & drop
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  )
+  // Récupération des projets depuis json-server
+  useEffect(() => {
+    api.get("/projects")
+      .then(res => setProjects(res.data))
+      .catch(err => console.error("Erreur lors du chargement des projets:", err))
+  }, [])
 
-  const createProject = () => {
+  // Crée un nouveau projet (et envoie à json-server)
+  const createProject = async () => {
     if (!projectName.trim()) return
-    setProjects(prev => [...prev, { id: Date.now(), name: projectName }])
+    const newProject = { name: projectName.trim() }
+
+    const res = await api.post("/projects", newProject)
+    setProjects(prev => [...prev, res.data])
     setProjectName("")
     setOpen(false)
   }
 
-  const handleDelete = (id: number) => {
+  // Supprime un projet
+  const handleDelete = async (id: number) => {
+    await api.delete(`/projects/${id}`)
     setProjects(prev => prev.filter(p => p.id !== id))
   }
 
-  const handleRename = (id: number, newName: string) => {
-    setProjects(prev => prev.map(p => (
-      p.id === id ? { ...p, name: newName } : p
-    )))
-    setRenamingId(null)
+  // Renomme un projet
+  const handleRename = async (id: number, newName: string) => {
+    const updated = { name: newName }
+    await api.patch(`/projects/${id}`, updated)
+    setProjects(prev => prev.map(p => (p.id === id ? { ...p, ...updated } : p)))
   }
 
-  const handleDuplicate = (id: number) => {
+  // Duplique un projet
+  const handleDuplicate = async (id: number) => {
     const original = projects.find(p => p.id === id)
     if (original) {
-      setProjects(prev => [
-        ...prev,
-        { id: Date.now(), name: `${original.name} (copie)` },
-      ])
+      const res = await api.post("/projects", { name: `${original.name} (copie)` })
+      setProjects(prev => [...prev, res.data])
     }
   }
 
+  // Drag Start
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id)
   }
 
+  // Drag End
   const handleDragEnd = (event: any) => {
     const { active, over } = event
     if (active.id !== over?.id) {
@@ -82,8 +83,6 @@ export default function ProjectManager() {
     }
     setActiveId(null)
   }
-
-  const activeProject = projects.find(p => p.id === activeId)
 
   return (
     <div className="space-y-4">
@@ -99,11 +98,10 @@ export default function ProjectManager() {
             <DialogTitle>Nom du projet</DialogTitle>
           </DialogHeader>
           <Input
-            id="project-name"
-            name="projectName"
             placeholder="Ex: Portfolio VR"
             value={projectName}
             onChange={e => setProjectName(e.target.value)}
+            id="project-name"
           />
           <DialogFooter>
             <Button onClick={createProject}>Créer</Button>
@@ -127,26 +125,14 @@ export default function ProjectManager() {
                 key={p.id}
                 id={p.id}
                 name={p.name}
-                isRenaming={renamingId === p.id}
-                onStartRenaming={() => setRenamingId(p.id)}
-                onRename={handleRename}
                 onDelete={handleDelete}
+                onRename={handleRename}
                 onDuplicate={handleDuplicate}
-                onClick={() => {
-                  if (renamingId === null) navigate(`/project/${p.id}`)
-                }}
+                onClick={() => navigate(`/project/${p.id}`)}
               />
             ))}
           </div>
         </SortableContext>
-
-        <DragOverlay>
-          {activeProject && (
-            <Card className="p-4 w-full max-w-sm h-28 rounded-lg bg-muted text-foreground font-semibold shadow-lg flex items-center">
-              {activeProject.name}
-            </Card>
-          )}
-        </DragOverlay>
       </DndContext>
     </div>
   )
